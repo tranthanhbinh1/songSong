@@ -6,7 +6,13 @@ import java.util.List;
 
 public interface DirectoryService extends Remote {
 
-    void registerClient(String clientId) throws RemoteException;
+    void registerClient(String clientId, String host, int port) throws RemoteException;
 
-    List<String> getClients() throws RemoteException;
+    void registerFile(String clientId, String filename, long size) throws RemoteException;
+
+    List<ClientInfo> getClients() throws RemoteException;
+
+    List<FileLocation> searchFile(String filename) throws RemoteException;
+
+    void heartbeat(String clientId) throws RemoteException;
 }
