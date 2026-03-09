@@ -1,0 +1,11 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':shared')
+}
+
+// application {
+//     mainClass = 'com.dd.download.DownloadApp'
+// }

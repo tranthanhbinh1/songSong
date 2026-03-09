@@ -1,0 +1,6 @@
+rootProject.name = 'distributed-downloader'
+
+include 'shared'
+include 'directory'
+include 'daemon'
+include 'download'
