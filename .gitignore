@@ -1,4 +1,27 @@
+# Gradle
 .gradle/
-build/
+**/build/
+
+# Java
 *.class
 out/
+
+# Logs
+*.log
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
