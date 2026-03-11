@@ -7,5 +7,5 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.dd.daemon.TestClient'
+    mainClass = 'com.dd.daemon.DaemonMain'
 }
