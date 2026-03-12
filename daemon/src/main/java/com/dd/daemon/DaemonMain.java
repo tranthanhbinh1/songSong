@@ -24,8 +24,11 @@ public class DaemonMain {
                     .println("Registered file " + p.getFileName() + " with size " + size + " with directory service.");
         }
 
-        try (HeartbeatWorker heartbeatWorker = new HeartbeatWorker()) {
+        try (HeartbeatWorker heartbeatWorker = new HeartbeatWorker();
+                FragmentServer fragmentServer = new FragmentServer(config.peerPort(), files)) {
             heartbeatWorker.start(directoryClient, config.clientId(), config.heartbeatInterval());
+            fragmentServer.start();
+            System.out.println("Fragment server listening on port " + fragmentServer.getPort());
             Thread.currentThread().join();
         }
     }
