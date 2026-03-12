@@ -28,4 +28,8 @@ public class LocalFileCatalog {
         }
         return Map.copyOf(mapByName);
     }
+
+    public Path resolve(String filename) {
+        return mapByName.get(filename);
+    }
 }

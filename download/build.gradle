@@ -4,8 +4,10 @@ plugins {
 
 dependencies {
     implementation project(':shared')
+    testImplementation project(':daemon')
+    testImplementation project(':directory')
 }
 
-// application {
-//     mainClass = 'com.dd.download.DownloadApp'
-// }
+application {
+    mainClass = 'com.dd.download.DownloadApp'
+}
