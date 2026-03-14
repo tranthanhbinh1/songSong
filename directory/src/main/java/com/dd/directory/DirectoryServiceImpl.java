@@ -21,7 +21,7 @@ public class DirectoryServiceImpl extends UnicastRemoteObject implements Directo
     private final long cleanupIntervalMillis;
 
     public DirectoryServiceImpl() throws RemoteException {
-        this(30_000L, 10_000L);
+        this(10_000L, 2_000L);
     }
 
     public DirectoryServiceImpl(long heartbeatTimeoutMillis, long cleanupIntervalMillis) throws RemoteException {
@@ -51,11 +51,6 @@ public class DirectoryServiceImpl extends UnicastRemoteObject implements Directo
 
         fileRecord.providers.add(clientId);
         System.out.println(clientId + " provides file: " + filename);
-    }
-
-    @Override
-    public synchronized List<ClientInfo> getClients() throws RemoteException {
-        return new ArrayList<>(clients.values());
     }
 
     @Override

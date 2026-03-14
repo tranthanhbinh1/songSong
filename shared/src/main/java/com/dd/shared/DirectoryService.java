@@ -10,8 +10,6 @@ public interface DirectoryService extends Remote {
 
     void registerFile(String clientId, String filename, long size) throws RemoteException;
 
-    List<ClientInfo> getClients() throws RemoteException;
-
     List<FileLocation> searchFile(String filename) throws RemoteException;
 
     void heartbeat(String clientId) throws RemoteException;
