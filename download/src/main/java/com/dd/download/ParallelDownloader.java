@@ -88,7 +88,8 @@ public class ParallelDownloader {
                     assignment.provider(),
                     assignment.filename(),
                     assignment.offset(),
-                    assignment.length());
+                    assignment.length(),
+                    assignment.compressionEnabled());
             if (bytes.length != assignment.length()) {
                 throw new IOException("Expected " + assignment.length() + " bytes but received " + bytes.length);
             }
@@ -105,7 +106,7 @@ public class ParallelDownloader {
         long offset = (long) chunkIndex * config.chunkSizeBytes();
         int length = (int) Math.min(config.chunkSizeBytes(), fileSize - offset);
         FileLocation provider = providers.get(chunkIndex % providers.size());
-        return new ChunkAssignment(provider, config.filename(), offset, length);
+        return new ChunkAssignment(provider, config.filename(), offset, length, config.compressionEnabled());
     }
 
     private void writeAll(FileChannel outputChannel, long offset, byte[] bytes) throws IOException {
@@ -116,6 +117,11 @@ public class ParallelDownloader {
         }
     }
 
-    private record ChunkAssignment(FileLocation provider, String filename, long offset, int length) {
+    private record ChunkAssignment(
+            FileLocation provider,
+            String filename,
+            long offset,
+            int length,
+            boolean compressionEnabled) {
     }
 }

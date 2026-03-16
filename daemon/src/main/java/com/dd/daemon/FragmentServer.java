@@ -71,13 +71,20 @@ public class FragmentServer implements AutoCloseable {
             String filename = input.readUTF();
             long offset = input.readLong();
             int length = input.readInt();
-            serveFragment(filename, offset, length, output);
+            boolean compressionEnabled = input.readBoolean();
+            serveFragment(filename, offset, length, compressionEnabled, output);
         } catch (IOException e) {
             System.err.println("Fragment request failed: " + e.getMessage());
         }
     }
 
-    private void serveFragment(String filename, long offset, int length, DataOutputStream output) throws IOException {
+    private void serveFragment(
+            String filename,
+            long offset,
+            int length,
+            boolean compressionEnabled,
+            DataOutputStream output)
+            throws IOException {
         Path filePath = filesByName.get(filename);
         if (filePath == null || !Files.isRegularFile(filePath)) {
             output.writeByte(STATUS_FILE_NOT_FOUND);
@@ -103,12 +110,12 @@ public class FragmentServer implements AutoCloseable {
             randomAccessFile.seek(offset); // Set the offset for the fragment before reading
             byte[] buffer = new byte[actualLength];
             randomAccessFile.readFully(buffer);
-            byte[] compressed = compress(buffer);
+            byte[] payload = compressionEnabled ? compress(buffer) : buffer;
 
             output.writeByte(STATUS_OK);
             output.writeInt(actualLength);
-            output.writeInt(compressed.length);
-            output.write(compressed);
+            output.writeInt(payload.length);
+            output.write(payload);
             output.flush();
         } catch (IOException e) {
             output.writeByte(STATUS_SERVER_ERROR);

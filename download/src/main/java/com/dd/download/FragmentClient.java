@@ -12,7 +12,13 @@ import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 
 public class FragmentClient {
-    public byte[] fetchFragment(FileLocation location, String filename, long offset, int length) throws IOException {
+    public byte[] fetchFragment(
+            FileLocation location,
+            String filename,
+            long offset,
+            int length,
+            boolean compressionEnabled)
+            throws IOException {
         try (Socket socket = new Socket(location.host, location.port);
                 DataOutputStream output = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                 DataInputStream input = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
@@ -20,6 +26,7 @@ public class FragmentClient {
             output.writeUTF(filename);
             output.writeLong(offset);
             output.writeInt(length);
+            output.writeBoolean(compressionEnabled);
             output.flush();
 
             byte status = input.readByte();
@@ -28,9 +35,9 @@ public class FragmentClient {
             }
 
             int originalLength = input.readInt();
-            int compressedLength = input.readInt();
-            byte[] compressedBytes = input.readNBytes(compressedLength);
-            byte[] bytes = inflate(compressedBytes);
+            int payloadLength = input.readInt();
+            byte[] payload = input.readNBytes(payloadLength);
+            byte[] bytes = compressionEnabled ? inflate(payload) : payload;
             if (bytes.length != originalLength) {
                 throw new IOException("Expected " + originalLength + " bytes after decompression but received "
                         + bytes.length);

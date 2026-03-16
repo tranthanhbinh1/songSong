@@ -45,7 +45,7 @@ Important notes:
 - The filename must be exactly the same on all providers.
 - File identity is based on filename only.
 - Files are scanned only when the daemon starts. If you add or remove files later, restart that daemon.
-- File fragments are gzip-compressed transparently during transfer; shared files remain unchanged on disk.
+- File fragments can be transferred either raw or gzip-compressed; shared files remain unchanged on disk.
 
 ## Run the Directory
 
@@ -114,7 +114,7 @@ bash ./gradlew :download:run --args='file.bin 127.0.0.1 1099 /tmp/songSong/outpu
 Download arguments:
 
 ```text
-<filename> [directoryHost=localhost] [directoryPort=1099] [outputDir=downloads] [chunkSizeBytes=1048576]
+<filename> [directoryHost=localhost] [directoryPort=1099] [outputDir=downloads] [chunkSizeBytes=1048576] [compressionEnabled=true]
 ```
 
 Example meaning:
@@ -122,6 +122,7 @@ Example meaning:
 - contact the directory at `127.0.0.1:1099`
 - store the final file in `/tmp/songSong/output`
 - use `262144` bytes per fragment
+- enable gzip compression for fragment transfer
 
 If the download succeeds, the result will be:
 
@@ -130,9 +131,10 @@ If the download succeeds, the result will be:
 ```
 
 Compression note:
-- There is no extra flag to enable compression.
-- Every `GET_FRAGMENT` response is gzip-compressed automatically by the daemon.
-- The downloader decompresses each fragment before writing the final file.
+- Compression is controlled by the optional last download argument.
+- `true` means fragments are gzip-compressed in transit.
+- `false` means fragments are transferred raw, which is useful for benchmarking.
+- The shared files on disk remain unchanged in both modes.
 
 ## Verify the Result
 
@@ -144,7 +146,7 @@ shasum /tmp/songSong/output/file.bin
 ```
 
 The hashes should match.
-Fragments are compressed only in transit, so there is no cache directory or compressed copy created in the shared folder.
+Compression, when enabled, happens only in transit, so there is no cache directory or compressed copy created in the shared folder.
 
 ## Test the Compression Feature
 
@@ -182,7 +184,7 @@ PY
 Then run the directory, both daemons, and the downloader exactly as shown above, but request:
 
 ```bash
-bash ./gradlew :download:run --args='compressible.txt 127.0.0.1 1099 /tmp/songSong/output 262144'
+bash ./gradlew :download:run --args='compressible.txt 127.0.0.1 1099 /tmp/songSong/output 262144 true'
 ```
 
 Finally, verify the downloaded file:
@@ -193,6 +195,28 @@ shasum /tmp/songSong/output/compressible.txt
 ```
 
 The hashes should match. That confirms the file survived the gzip-compress/decompress transfer path correctly.
+
+### Benchmark compressed vs uncompressed
+
+Build the standalone launcher once:
+
+```bash
+bash ./gradlew :download:installDist
+```
+
+Run without compression:
+
+```bash
+time download/build/install/download/bin/download bigfile.bin 127.0.0.1 1099 /tmp/songSong/output 262144 false
+```
+
+Run with compression:
+
+```bash
+time download/build/install/download/bin/download bigfile.bin 127.0.0.1 1099 /tmp/songSong/output 262144 true
+```
+
+Compare the `total` time from both commands. Use the same file, same chunk size, and the same running daemons for a fair comparison.
 
 ## Use Generated Launch Scripts
 
