@@ -24,6 +24,18 @@ If `./gradlew` is not executable on your machine, use `bash ./gradlew`.
 bash ./gradlew build
 ```
 
+This compiles the project, runs tests, and builds the jars.
+
+## Generate Launch Scripts
+
+To run the modules directly without Gradle, generate the application launchers:
+
+```bash
+bash ./gradlew :directory:installDist :daemon:installDist :download:installDist
+```
+
+This creates runnable scripts under each module's `build/install/.../bin/` directory.
+
 ## Local Demo Setup
 
 Create two local provider folders and one output folder:
@@ -53,16 +65,25 @@ Open a first terminal:
 
 ```bash
 cd /Users/binhtran/projects/usth-sys-arch/songSong
-bash ./gradlew :directory:run
+directory/build/install/directory/bin/directory localhost 1099 1100
 ```
 
 Expected log:
 
 ```text
-Directory RMI server running...
+Directory RMI server running on localhost (registry port 1099, service port 1100)
 ```
 
-The directory currently listens on fixed port `1099`.
+Directory arguments:
+
+```text
+[advertisedHost=localhost] [registryPort=1099] [servicePort=1100]
+```
+
+The directory now uses:
+- an RMI registry port, default `1099`
+- a fixed RMI service port, default `1100`
+- an advertised hostname, which must be reachable by all daemons and download clients
 
 ## Run the Daemons
 
@@ -70,14 +91,14 @@ Open a second terminal for daemon 1:
 
 ```bash
 cd /Users/binhtran/projects/usth-sys-arch/songSong
-bash ./gradlew :daemon:run --args='client1 127.0.0.1 5001 /tmp/songSong/provider1 127.0.0.1 1099'
+daemon/build/install/daemon/bin/daemon client1 127.0.0.1 5001 /tmp/songSong/provider1 127.0.0.1 1099
 ```
 
 Open a third terminal for daemon 2:
 
 ```bash
 cd /Users/binhtran/projects/usth-sys-arch/songSong
-bash ./gradlew :daemon:run --args='client2 127.0.0.1 5002 /tmp/songSong/provider2 127.0.0.1 1099'
+daemon/build/install/daemon/bin/daemon client2 127.0.0.1 5002 /tmp/songSong/provider2 127.0.0.1 1099
 ```
 
 Daemon arguments:
@@ -96,6 +117,9 @@ Argument meaning:
 
 For a local demo, `127.0.0.1` is fine.
 
+For a multi-machine run over Tailscale, use the daemon machine's Tailscale DNS name or Tailscale IP as the `host`
+argument, and use the directory machine's Tailscale DNS name or Tailscale IP as `directoryHost`.
+
 Expected daemon logs include:
 - client registration
 - file registration
@@ -108,7 +132,7 @@ Open a fourth terminal:
 
 ```bash
 cd /Users/binhtran/projects/usth-sys-arch/songSong
-bash ./gradlew :download:run --args='file.bin 127.0.0.1 1099 /tmp/songSong/output 262144'
+download/build/install/download/bin/download file.bin 127.0.0.1 1099 /tmp/songSong/output 262144
 ```
 
 Download arguments:
@@ -148,6 +172,29 @@ shasum /tmp/songSong/output/file.bin
 The hashes should match.
 Compression, when enabled, happens only in transit, so there is no cache directory or compressed copy created in the shared folder.
 
+## Run Across Two Machines With Tailscale
+
+On the machine running the directory:
+
+```bash
+cd /Users/binhtran/projects/usth-sys-arch/songSong
+directory/build/install/directory/bin/directory binhs-macbook-pro.tailae9542.ts.net 1099 1100
+```
+
+On the second machine running the daemon:
+
+```bash
+cd /Users/binhtran/projects/usth-sys-arch/songSong
+daemon/build/install/daemon/bin/daemon client1 tb24-workstation.tailae9542.ts.net 5001 /tmp/songSong/provider1 binhs-macbook-pro.tailae9542.ts.net 1099
+```
+
+If you download from either machine, point the downloader at the directory host:
+
+```bash
+cd /Users/binhtran/projects/usth-sys-arch/songSong
+download/build/install/download/bin/download file.bin binhs-macbook-pro.tailae9542.ts.net 1099 /tmp/songSong/output 262144
+```
+
 ## Test the Compression Feature
 
 ### Automated tests
@@ -184,7 +231,7 @@ PY
 Then run the directory, both daemons, and the downloader exactly as shown above, but request:
 
 ```bash
-bash ./gradlew :download:run --args='compressible.txt 127.0.0.1 1099 /tmp/songSong/output 262144 true'
+download/build/install/download/bin/download compressible.txt 127.0.0.1 1099 /tmp/songSong/output 262144 true
 ```
 
 Finally, verify the downloaded file:
@@ -197,12 +244,6 @@ shasum /tmp/songSong/output/compressible.txt
 The hashes should match. That confirms the file survived the gzip-compress/decompress transfer path correctly.
 
 ### Benchmark compressed vs uncompressed
-
-Build the standalone launcher once:
-
-```bash
-bash ./gradlew :download:installDist
-```
 
 Run without compression:
 
@@ -218,23 +259,17 @@ time download/build/install/download/bin/download bigfile.bin 127.0.0.1 1099 /tm
 
 Compare the `total` time from both commands. Use the same file, same chunk size, and the same running daemons for a fair comparison.
 
-## Use Generated Launch Scripts
+## Run Without Gradle
 
-If you prefer launch scripts instead of `gradlew :module:run`, generate them with:
-
-```bash
-bash ./gradlew :directory:installDist :daemon:installDist :download:installDist
-```
-
-Then run:
+After running both `build` and `installDist`, start the generated launch scripts directly:
 
 ```bash
 directory/build/install/directory/bin/directory
-daemon/build/install/daemon/bin/daemon
-download/build/install/download/bin/download
+daemon/build/install/daemon/bin/daemon <args...>
+download/build/install/download/bin/download <args...>
 ```
 
-The daemon and download arguments remain the same.
+This avoids Gradle startup overhead and is the recommended way to demo and benchmark the project.
 
 ## Run Tests
 
