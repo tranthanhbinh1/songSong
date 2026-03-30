@@ -60,20 +60,18 @@ public class ParallelDownloader {
             for (Future<Void> future : futures) {
                 future.get();
             }
-        } catch (ExecutionException e) {
-            executor.shutdownNow();
+        } catch (Exception e) {
             Files.deleteIfExists(partPath);
-            Throwable cause = e.getCause() == null ? e : e.getCause();
+
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+
+            Throwable cause = e instanceof ExecutionException executionException
+                    && executionException.getCause() != null
+                            ? executionException.getCause()
+                            : e;
             throw new IOException("Download failed for " + config.filename() + ": " + cause.getMessage(), cause);
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Files.deleteIfExists(partPath);
-            Thread.currentThread().interrupt();
-            throw new IOException("Download interrupted for " + config.filename(), e);
-        } catch (IOException e) {
-            executor.shutdownNow();
-            Files.deleteIfExists(partPath);
-            throw e;
         } finally {
             executor.shutdownNow();
         }

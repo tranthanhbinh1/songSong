@@ -13,7 +13,7 @@ The project has three components:
 - A terminal opened at the project root
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 ```
 
 If `./gradlew` is not executable on your machine, use `bash ./gradlew`.
@@ -64,7 +64,7 @@ Important notes:
 Open a first terminal:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 directory/build/install/directory/bin/directory localhost 1099 1100
 ```
 
@@ -90,14 +90,14 @@ The directory now uses:
 Open a second terminal for daemon 1:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 daemon/build/install/daemon/bin/daemon client1 127.0.0.1 5001 /tmp/songSong/provider1 127.0.0.1 1099
 ```
 
 Open a third terminal for daemon 2:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 daemon/build/install/daemon/bin/daemon client2 127.0.0.1 5002 /tmp/songSong/provider2 127.0.0.1 1099
 ```
 
@@ -131,7 +131,7 @@ Expected daemon logs include:
 Open a fourth terminal:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 download/build/install/download/bin/download file.bin 127.0.0.1 1099 /tmp/songSong/output 262144
 ```
 
@@ -177,21 +177,21 @@ Compression, when enabled, happens only in transit, so there is no cache directo
 On the machine running the directory:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 directory/build/install/directory/bin/directory binhs-macbook-pro.tailae9542.ts.net 1099 1100
 ```
 
 On the second machine running the daemon:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 daemon/build/install/daemon/bin/daemon client1 tb24-workstation.tailae9542.ts.net 5001 /tmp/songSong/provider1 binhs-macbook-pro.tailae9542.ts.net 1099
 ```
 
 If you download from either machine, point the downloader at the directory host:
 
 ```bash
-cd /Users/binhtran/projects/usth-sys-arch/songSong
+cd /Users/.../.../songSong
 download/build/install/download/bin/download file.bin binhs-macbook-pro.tailae9542.ts.net 1099 /tmp/songSong/output 262144
 ```
 
@@ -214,34 +214,6 @@ These tests verify that:
 - the daemon sends gzip-compressed fragment payloads
 - the download client correctly decompresses them
 - parallel download still reconstructs the original file correctly
-
-### Manual local check
-
-Use a highly compressible file so the feature is easier to reason about:
-
-```bash
-python3 - <<'PY'
-from pathlib import Path
-data = ("songSong compression demo\n" * 200000).encode()
-Path("/tmp/songSong/provider1/compressible.txt").write_bytes(data)
-Path("/tmp/songSong/provider2/compressible.txt").write_bytes(data)
-PY
-```
-
-Then run the directory, both daemons, and the downloader exactly as shown above, but request:
-
-```bash
-download/build/install/download/bin/download compressible.txt 127.0.0.1 1099 /tmp/songSong/output 262144 true
-```
-
-Finally, verify the downloaded file:
-
-```bash
-shasum /tmp/songSong/provider1/compressible.txt
-shasum /tmp/songSong/output/compressible.txt
-```
-
-The hashes should match. That confirms the file survived the gzip-compress/decompress transfer path correctly.
 
 ### Benchmark compressed vs uncompressed
 
@@ -282,40 +254,3 @@ Or run the full build:
 ```bash
 bash ./gradlew build
 ```
-
-## Common Issues
-
-- `No providers found for file ...`
-  - The requested filename does not match the shared filename.
-  - The daemon did not register the file.
-  - The directory is not running.
-
-- `Connection refused`
-  - The daemon port is wrong.
-  - The daemon host is wrong.
-  - The daemon is not running.
-
-- Newly added files do not appear
-  - Restart the daemon because it only scans files at startup.
-
-- Download fails when a provider disconnects
-  - This is expected in the current version. Retry/resume is not implemented yet.
-
-- Port already in use
-  - Change daemon ports such as `5001` and `5002`.
-  - The directory port is currently fixed at `1099`.
-
-## Current Limitations
-
-- No retry or fragment reassignment when a provider fails
-- No dynamic discovery of new providers during an active download
-- No load-aware provider selection
-- The directory port is hardcoded to `1099`
-
-## Minimal End-to-End Sequence
-
-1. Build the project with `bash ./gradlew build`.
-2. Start the directory.
-3. Start two daemons with the same file in separate folders.
-4. Run the downloader for that filename.
-5. Verify the downloaded file checksum.
