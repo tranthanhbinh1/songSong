@@ -1,5 +1,6 @@
 package com.dd.daemon;
 
+import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPOutputStream;
 
 public class FragmentServer implements AutoCloseable {
     static final byte STATUS_OK = 0;
@@ -69,13 +71,20 @@ public class FragmentServer implements AutoCloseable {
             String filename = input.readUTF();
             long offset = input.readLong();
             int length = input.readInt();
-            serveFragment(filename, offset, length, output);
+            boolean compressionEnabled = input.readBoolean();
+            serveFragment(filename, offset, length, compressionEnabled, output);
         } catch (IOException e) {
             System.err.println("Fragment request failed: " + e.getMessage());
         }
     }
 
-    private void serveFragment(String filename, long offset, int length, DataOutputStream output) throws IOException {
+    private void serveFragment(
+            String filename,
+            long offset,
+            int length,
+            boolean compressionEnabled,
+            DataOutputStream output)
+            throws IOException {
         Path filePath = filesByName.get(filename);
         if (filePath == null || !Files.isRegularFile(filePath)) {
             output.writeByte(STATUS_FILE_NOT_FOUND);
@@ -101,16 +110,26 @@ public class FragmentServer implements AutoCloseable {
             randomAccessFile.seek(offset); // Set the offset for the fragment before reading
             byte[] buffer = new byte[actualLength];
             randomAccessFile.readFully(buffer);
+            byte[] payload = compressionEnabled ? compress(buffer) : buffer;
 
             output.writeByte(STATUS_OK);
             output.writeInt(actualLength);
-            output.write(buffer);
+            output.writeInt(payload.length);
+            output.write(payload);
             output.flush();
         } catch (IOException e) {
             output.writeByte(STATUS_SERVER_ERROR);
             output.flush();
             throw e;
         }
+    }
+
+    private byte[] compress(byte[] bytes) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzipOutput = new GZIPOutputStream(new BufferedOutputStream(buffer))) {
+            gzipOutput.write(bytes);
+        }
+        return buffer.toByteArray();
     }
 
     @Override

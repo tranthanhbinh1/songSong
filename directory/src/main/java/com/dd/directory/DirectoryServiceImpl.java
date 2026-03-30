@@ -24,8 +24,17 @@ public class DirectoryServiceImpl extends UnicastRemoteObject implements Directo
         this(10_000L, 2_000L);
     }
 
+    public DirectoryServiceImpl(int exportPort) throws RemoteException {
+        this(exportPort, 10_000L, 2_000L);
+    }
+
     public DirectoryServiceImpl(long heartbeatTimeoutMillis, long cleanupIntervalMillis) throws RemoteException {
-        super();
+        this(0, heartbeatTimeoutMillis, cleanupIntervalMillis);
+    }
+
+    public DirectoryServiceImpl(int exportPort, long heartbeatTimeoutMillis, long cleanupIntervalMillis)
+            throws RemoteException {
+        super(exportPort);
         this.heartbeatTimeoutMillis = heartbeatTimeoutMillis;
         this.cleanupIntervalMillis = cleanupIntervalMillis;
         startCleanupThread();
